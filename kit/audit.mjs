@@ -1495,11 +1495,13 @@ export function markupBox(svg) {
   const tags = [...svg.matchAll(/<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<(\/?)([a-zA-Z]+)((?:"[^"]*"|'[^']*'|[^'">])*?)(\/?)>/g)].filter((match) => match[2]);
   const clips = new Map();
   let clipId = null;
+  let clipMatrix = null;
   for (const [, close, tag, attrs, self] of tags) {
     if (tag === "clipPath" && !close) {
       const id = attributeOf(attrs, "id");
       if (id) clips.set(id, null);
       clipId = self ? null : id;
+      clipMatrix = matrixOf(attributeOf(attrs, "transform"));
       continue;
     }
     if (clipId) {
@@ -1507,7 +1509,7 @@ export function markupBox(svg) {
         clipId = null;
         continue;
       }
-      const shape = boxOfShape(tag, attrs, matrixOf(attributeOf(attrs, "transform")));
+      const shape = boxOfShape(tag, attrs, multiply(clipMatrix, matrixOf(attributeOf(attrs, "transform"))));
       if (shape?.some(Number.isNaN)) {
         clips.delete(clipId);
         clipId = null;
